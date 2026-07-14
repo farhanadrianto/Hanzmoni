@@ -1,5 +1,5 @@
 /* ===================================
-   HARMONIA - OFFLINE MUSIC PLAYER
+   HANZMONI - OFFLINE MUSIC PLAYER
    Modern HTML5 Audio Player with glassmorphism UI
    =================================== */
 
@@ -120,7 +120,7 @@ function init() {
     createParticles();
     
     // Load saved page
-    const savedPage = localStorage.getItem('harmonia-current-page');
+    const savedPage = localStorage.getItem('hanzmoni-current-page');
     if (savedPage) {
         currentPage = parseInt(savedPage);
     }
@@ -128,17 +128,51 @@ function init() {
     loadSongs();
     
     // Load last played song and position
-    const lastSongIndex = localStorage.getItem('harmonia-current-song');
-    const lastCurrentTime = localStorage.getItem('harmonia-current-time');
+    const lastSongIndex = localStorage.getItem('hanzmoni-current-song');
+    const lastCurrentTime = localStorage.getItem('hanzmoni-current-time');
     const startIndex = lastSongIndex ? parseInt(lastSongIndex) : 0;
     
     // If there are songs, load the first one or last played
     if (songs.length > 0) {
         loadSong(Math.min(startIndex, songs.length - 1));
         
-        // Restore playback position if available
+        // Restore playback position if available - tapi tunggu metadata loaded dulu
         if (lastCurrentTime) {
-            audioPlayer.currentTime = parseFloat(lastCurrentTime);
+            const savedTime = parseFloat(lastCurrentTime);
+            
+            // Listener untuk restore time setelah metadata loaded
+            const restoreTimeHandler = () => {
+                if (audioPlayer.duration && !isNaN(audioPlayer.duration)) {
+                    // Ensure time valid dan tidak exceed duration
+                    const timeToRestore = Math.min(savedTime, audioPlayer.duration - 1);
+                    audioPlayer.currentTime = timeToRestore;
+                    
+                    // Force trigger timeupdate untuk update UI
+                    setTimeout(() => {
+                        const event = new Event('timeupdate');
+                        audioPlayer.dispatchEvent(event);
+                        // Juga manual update progress biar yakin
+                        updateProgress();
+                    }, 100);
+                    
+                    audioPlayer.removeEventListener('loadedmetadata', restoreTimeHandler);
+                }
+            };
+            
+            // Jika metadata sudah loaded, langsung set
+            if (audioPlayer.readyState >= 1) {
+                const timeToRestore = Math.min(savedTime, audioPlayer.duration - 1);
+                audioPlayer.currentTime = timeToRestore;
+                // Force update progress
+                setTimeout(() => {
+                    const event = new Event('timeupdate');
+                    audioPlayer.dispatchEvent(event);
+                    updateProgress();
+                }, 100);
+            } else {
+                // Tunggu metadata loaded
+                audioPlayer.addEventListener('loadedmetadata', restoreTimeHandler);
+            }
         }
     }
     console.log('Init end, final loopMode:', loopMode);
@@ -218,7 +252,7 @@ function setupEventListeners() {
             const song = songs[nextIndex];
             audioPlayer.src = song.file;
             audioPlayer.playbackRate = parseFloat(speedSelect.value);
-            localStorage.setItem('harmonia-current-song', nextIndex);
+            localStorage.setItem('hanzmoni-current-song', nextIndex);
             songTitle.textContent = song.title;
             songArtist.textContent = song.artist;
             coverImage.src = song.cover;
@@ -246,7 +280,7 @@ function setupEventListeners() {
             const song = songs[nextIndex];
             audioPlayer.src = song.file;
             audioPlayer.playbackRate = parseFloat(speedSelect.value);
-            localStorage.setItem('harmonia-current-song', nextIndex);
+            localStorage.setItem('hanzmoni-current-song', nextIndex);
             songTitle.textContent = song.title;
             songArtist.textContent = song.artist;
             coverImage.src = song.cover;
@@ -311,13 +345,13 @@ function loadSong(index) {
     const song = songs[index];
     
     // Save current song index
-    localStorage.setItem('harmonia-current-song', index);
+    localStorage.setItem('hanzmoni-current-song', index);
     
     // Auto-navigate to the page containing this song
     const pageForSong = Math.floor(index / songsPerPage) + 1;
     if (pageForSong !== currentPage) {
         currentPage = pageForSong;
-        localStorage.setItem('harmonia-current-page', currentPage);
+        localStorage.setItem('hanzmoni-current-page', currentPage);
         renderPlaylist();
     } else {
         // Just update highlight if already on correct page
@@ -325,7 +359,7 @@ function loadSong(index) {
     }
     
     // Clear saved time when loading new song
-    localStorage.removeItem('harmonia-current-time');
+    localStorage.removeItem('hanzmoni-current-time');
     
     // Update audio source
     audioPlayer.src = song.file;
@@ -430,7 +464,7 @@ function handleSongEnd() {
         const song = songs[nextIndex];
         audioPlayer.src = song.file;
         audioPlayer.playbackRate = parseFloat(speedSelect.value);
-        localStorage.setItem('harmonia-current-song', nextIndex);
+        localStorage.setItem('hanzmoni-current-song', nextIndex);
         songTitle.textContent = song.title;
         songArtist.textContent = song.artist;
         coverImage.src = song.cover;
@@ -455,21 +489,26 @@ function previewSeek(e) {
 }
 
 let lastUpdateTime = 0;
+let lastSaveTime = 0;
 function updateProgress() {
-    if (audioPlayer.duration) {
+    if (audioPlayer.duration && audioPlayer.duration > 0) {
         const now = Date.now();
         // Update max setiap 100ms untuk mobile smoothness
         if (now - lastUpdateTime < 100) return;
         lastUpdateTime = now;
         
-        const percent = (audioPlayer.currentTime / audioPlayer.duration) * 100;
+        const currentTime = audioPlayer.currentTime || 0;
+        const percent = (currentTime / audioPlayer.duration) * 100;
         progressBar.value = percent;
         progressFill.style.width = percent + '%';
-        currentTimeEl.textContent = formatTime(audioPlayer.currentTime);
         
-        // Save current time ke localStorage setiap 5 detik
-        if (Math.floor(audioPlayer.currentTime) % 5 === 0) {
-            localStorage.setItem('harmonia-current-time', audioPlayer.currentTime);
+        // PENTING: update timer text setiap kali dipanggil
+        currentTimeEl.textContent = formatTime(currentTime);
+        
+        // Save current time ke localStorage lebih sering - setiap 2 detik atau setiap perubahan significant
+        if (now - lastSaveTime > 2000) {
+            localStorage.setItem('hanzmoni-current-time', currentTime);
+            lastSaveTime = now;
         }
     }
 }
@@ -491,6 +530,22 @@ function changeVolume(e) {
     const volume = e.target.value / 100;
     audioPlayer.volume = volume;
     volumeValue.textContent = e.target.value + '%';
+    
+    // Force immediate volume update untuk mobile compatibility
+    if (audioPlayer.volume !== volume) {
+        // Retry jika volume tidak langsung berubah (mobile bug)
+        setTimeout(() => {
+            audioPlayer.volume = volume;
+        }, 50);
+    }
+    
+    // Jika lagu lagi play, ensure audio terus keluar setelah volume change
+    if (!audioPlayer.paused) {
+        audioPlayer.play().catch(() => {
+            // Ignore error jika lagu sudah playing
+        });
+    }
+    
     saveSettings();
 }
 
@@ -606,7 +661,7 @@ function changePage(direction) {
     currentPage = Math.max(1, Math.min(currentPage + direction, totalPages));
     
     // Save current page
-    localStorage.setItem('harmonia-current-page', currentPage);
+    localStorage.setItem('hanzmoni-current-page', currentPage);
     
     renderPlaylist();
     playlistList.scrollTop = 0;
@@ -737,12 +792,35 @@ function handleSearch(e) {
                 <div class="search-result-duration">0:00</div>
             `;
             
-            // Load metadata to get duration
+            // Load metadata to get duration - with timeout fallback
             const tempAudio = new Audio();
+            tempAudio.preload = 'metadata';
             tempAudio.src = song.file;
+            
+            let durationLoaded = false;
+            const loadTimeoutId = setTimeout(() => {
+                // Fallback: jika masih 0:00 setelah 2 detik, gunakan currentAudio duration
+                if (!durationLoaded && audioPlayer.src === song.file && audioPlayer.duration) {
+                    const durationDiv = item.querySelector('.search-result-duration');
+                    durationDiv.textContent = formatTime(audioPlayer.duration);
+                    durationLoaded = true;
+                }
+            }, 2000);
+            
             tempAudio.addEventListener('loadedmetadata', () => {
+                clearTimeout(loadTimeoutId);
                 const durationDiv = item.querySelector('.search-result-duration');
                 durationDiv.textContent = formatTime(tempAudio.duration);
+                durationLoaded = true;
+            });
+            
+            tempAudio.addEventListener('error', () => {
+                clearTimeout(loadTimeoutId);
+                // Jika error, ganti ke "-- :--"
+                const durationDiv = item.querySelector('.search-result-duration');
+                if (!durationLoaded) {
+                    durationDiv.textContent = '-- :--';
+                }
             });
             
             item.addEventListener('click', () => {
@@ -867,11 +945,11 @@ function saveSettings() {
         loop: loopMode,
         recentlyPlayed: recentlyPlayed
     };
-    localStorage.setItem('harmonia-settings', JSON.stringify(settings));
+    localStorage.setItem('hanzmoni-settings', JSON.stringify(settings));
 }
 
 function loadSettings() {
-    const stored = localStorage.getItem('harmonia-settings');
+    const stored = localStorage.getItem('hanzmoni-settings');
     console.log('Stored settings:', stored);
     if (stored) {
         try {
