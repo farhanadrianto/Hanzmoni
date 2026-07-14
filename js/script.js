@@ -4,67 +4,79 @@
    =================================== */
 
 // ===== SONG LIBRARY =====
-// EDIT INI: Tambah video kamu di sini
+// EDIT INI: Tambah lagu kamu di sini
 const songs = [
+    {
+        title: "Legends Never Die",
+        artist: "Against The Current",
+        file: "song/legends never die.mp3",
+        cover: "assets/legends never die.jpg"
+    },
+    {
+        title: "Royalty",
+        artist: "Egzod & Maestro Chives ft. Neoni",
+        file: "song/royalty.mp3",
+        cover: "assets/royalty.jpg"
+    },
+    {
+        title: "Unstoppable",
+        artist: "Sia",
+        file: "song/unstoppable.mp3",
+        cover: "assets/unstoppable.jpg"
+    },
+    {
+    title: "Light It Up",
+    artist: "Robin Hustin x TobiMorrow feat. Jex",
+    file: "song/light it up.mp3",
+    cover: "assets/light it up.jpg"
+    },
+    {
+    title: "Fly Away",
+    artist: "TheFatRat - feat. Anjulie",
+    file: "song/fly away.mp3",
+    cover: "assets/fly away.jpg"
+    },
+    {
+        title: "Decadence",
+        artist: "Disturbed",
+        file: "song/disturbed decadence.mp3",
+        cover: "assets/disturbed decadence.jpg"
+    },
     {
         title: "Wavin' Flag",
         artist: "K'NAAN",
-        file: "video/wavin flag.mp4",
+        file: "song/wavin flag.mp3",
         cover: "assets/wavin flag single.jpg"
     },
-        {
+    {
         title: "Waka Waka (This Time For Africa)",
         artist: "Shakira",
-        file: "video/waka waka.mp4",
+        file: "song/waka waka.mp3",
         cover: "assets/waka waka.jpg"
     },
     {
-    title: "Ale Ale Ale",
-    artist: "Nicky Jam, Will Smith & Era Istrefi",
-    file: "video/ale ale ale.mp4",
-    cover: "assets/ale ale ale.jpg"
+        title: "Ale Ale Ale",
+        artist: "Nicky Jam, Will Smith & Era Istrefi",
+        file: "song/ale ale ale.mp3",
+        cover: "assets/ale ale ale.jpg"
     },
     {
         title: "Sepenuh Hati",
         artist: "Rony Parulian",
-        file: "video/sepenuh hati.mp4",
+        file: "song/sepenuh hati.mp3",
         cover: "assets/sepenuh hati.jpg"
     },
     {
         title: "Jangan Paksa Rindu",
         artist: "Ifan Seventeen",
-        file: "video/jangan paksa rindu.mp4",
+        file: "song/jangan paksa rindu.mp3",
         cover: "assets/jangan paksa rindu.jpg"
     },
     {
         title: "Terbuang Dalam Waktu",
         artist: "Barasuara",
-        file: "video/terbuang dalam waktu.mp4",
+        file: "song/terbuang dalam waktu.mp3",
         cover: "assets/terbuang dalam waktu.webp"
-    },
-    {
-        title: "Decadence",
-        artist: "Disturbed",
-        file: "video/disturbed decadence.mp4",
-        cover: "assets/disturbed decadence.jpg"
-    },
-    {
-    title: "Legends Never Die",
-    artist: "Against The Current",
-    file: "video/legends never die.mp4",
-    cover: "assets/legends never die.jpg"
-    },
-    {
-    title: "Royalty",
-    artist: "Egzod & Maestro Chives ft. Neoni",
-    file: "video/royalty.mp4",
-    cover: "assets/royalty.jpg"
-    },
-    {
-    title: "Unstoppable",
-    artist: "Sia",
-    file: "video/unstoppable.mp4",
-    cover: "assets/unstoppable.jpg"
     }
 ];
 
@@ -127,53 +139,19 @@ function init() {
     
     loadSongs();
     
-    // Load last played song and position
+    // Load last played song
     const lastSongIndex = localStorage.getItem('hanzmoni-current-song');
-    const lastCurrentTime = localStorage.getItem('hanzmoni-current-time');
     const startIndex = lastSongIndex ? parseInt(lastSongIndex) : 0;
     
     // If there are songs, load the first one or last played
     if (songs.length > 0) {
         loadSong(Math.min(startIndex, songs.length - 1));
+        // Clear any saved time - always start from 0 on refresh
+        localStorage.removeItem('hanzmoni-current-time');
         
-        // Restore playback position if available - tapi tunggu metadata loaded dulu
-        if (lastCurrentTime) {
-            const savedTime = parseFloat(lastCurrentTime);
-            
-            // Listener untuk restore time setelah metadata loaded
-            const restoreTimeHandler = () => {
-                if (audioPlayer.duration && !isNaN(audioPlayer.duration)) {
-                    // Ensure time valid dan tidak exceed duration
-                    const timeToRestore = Math.min(savedTime, audioPlayer.duration - 1);
-                    audioPlayer.currentTime = timeToRestore;
-                    
-                    // Force trigger timeupdate untuk update UI
-                    setTimeout(() => {
-                        const event = new Event('timeupdate');
-                        audioPlayer.dispatchEvent(event);
-                        // Juga manual update progress biar yakin
-                        updateProgress();
-                    }, 100);
-                    
-                    audioPlayer.removeEventListener('loadedmetadata', restoreTimeHandler);
-                }
-            };
-            
-            // Jika metadata sudah loaded, langsung set
-            if (audioPlayer.readyState >= 1) {
-                const timeToRestore = Math.min(savedTime, audioPlayer.duration - 1);
-                audioPlayer.currentTime = timeToRestore;
-                // Force update progress
-                setTimeout(() => {
-                    const event = new Event('timeupdate');
-                    audioPlayer.dispatchEvent(event);
-                    updateProgress();
-                }, 100);
-            } else {
-                // Tunggu metadata loaded
-                audioPlayer.addEventListener('loadedmetadata', restoreTimeHandler);
-            }
-        }
+        // Initialize equalizer - bars tetap visible (no active, no paused)
+        equalizer.classList.remove('active');
+        equalizer.classList.remove('paused');
     }
     console.log('Init end, final loopMode:', loopMode);
 }
@@ -407,6 +385,7 @@ function handlePlay() {
     playBtn.querySelector('.icon').innerHTML = '<path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/>';
     albumCover.classList.add('playing');
     equalizer.classList.add('active');
+    equalizer.classList.remove('paused');
     updatePlaylistHighlight();
 }
 
@@ -414,7 +393,9 @@ function handlePause() {
     isPlaying = false;
     playBtn.querySelector('.icon').innerHTML = '<path d="M8 5v14l11-7z"/>';
     albumCover.classList.remove('playing');
+    // Keep equalizer visible but frozen at pause
     equalizer.classList.remove('active');
+    equalizer.classList.add('paused');
     updatePlaylistHighlight();
 }
 
@@ -633,8 +614,15 @@ function renderPlaylist() {
         `;
         
         item.addEventListener('click', () => {
-            loadSong(index);
-            audioPlayer.play();
+            // Check if clicking the currently playing song
+            if (index === currentSongIndex) {
+                // Same song - just ensure it's playing, don't reload
+                audioPlayer.play().catch(e => console.error('Play error:', e));
+            } else {
+                // Different song - load and play normally
+                loadSong(index);
+                audioPlayer.play().catch(e => console.error('Play error:', e));
+            }
         });
         
         songsWrapper.appendChild(item);
@@ -672,8 +660,16 @@ function handlePlaylistClick(e) {
     if (!item) return;
     
     const index = parseInt(item.dataset.index);
-    loadSong(index);
-    audioPlayer.play();
+    
+    // Check if clicking the currently playing song
+    if (index === currentSongIndex) {
+        // Same song - just ensure it's playing, don't reload
+        audioPlayer.play().catch(e => console.error('Play error:', e));
+    } else {
+        // Different song - load and play normally
+        loadSong(index);
+        audioPlayer.play().catch(e => console.error('Play error:', e));
+    }
 }
 
 function updatePlaylistHighlight() {
@@ -824,8 +820,15 @@ function handleSearch(e) {
             });
             
             item.addEventListener('click', () => {
-                loadSong(originalIndex);
-                audioPlayer.play();
+                // Check if clicking the currently playing song
+                if (originalIndex === currentSongIndex) {
+                    // Same song - just ensure it's playing, don't reload
+                    audioPlayer.play().catch(e => console.error('Play error:', e));
+                } else {
+                    // Different song - load and play normally
+                    loadSong(originalIndex);
+                    audioPlayer.play().catch(e => console.error('Play error:', e));
+                }
                 // Clear search
                 clearSearch();
             });
@@ -856,8 +859,16 @@ function handleSearchKeydown(e) {
         if (searchSelectedIndex >= 0 && searchSelectedIndex < items.length) {
             const selectedItem = items[searchSelectedIndex];
             const index = parseInt(selectedItem.dataset.index);
-            loadSong(index);
-            audioPlayer.play();
+            
+            // Check if clicking the currently playing song
+            if (index === currentSongIndex) {
+                // Same song - just ensure it's playing, don't reload
+                audioPlayer.play().catch(e => console.error('Play error:', e));
+            } else {
+                // Different song - load and play normally
+                loadSong(index);
+                audioPlayer.play().catch(e => console.error('Play error:', e));
+            }
             clearSearch();
         }
     } else if (e.key === 'Escape') {
@@ -922,8 +933,15 @@ function renderFilteredPlaylist(filteredSongs) {
         `;
         
         item.addEventListener('click', () => {
-            loadSong(originalIndex);
-            audioPlayer.play();
+            // Check if clicking the currently playing song
+            if (originalIndex === currentSongIndex) {
+                // Same song - just ensure it's playing, don't reload
+                audioPlayer.play().catch(e => console.error('Play error:', e));
+            } else {
+                // Different song - load and play normally
+                loadSong(originalIndex);
+                audioPlayer.play().catch(e => console.error('Play error:', e));
+            }
             // Clear search after clicking
             searchInput.value = '';
             renderPlaylist();
@@ -1008,3 +1026,21 @@ window.addEventListener('resize', () => {
         menuToggle.classList.remove('active');
     }
 });
+
+
+// ===== LYRICS DISPLAY =====
+function showLyrics() {
+    if (currentSongIndex < 0 || currentSongIndex >= songs.length) return;
+    
+    const song = songs[currentSongIndex];
+    lyricsTitle.textContent = song.title;
+    lyricsArtist.textContent = song.artist;
+    lyricsText.textContent = song.lyrics || 'No lyrics available for this song';
+    lyricsText.classList.toggle('empty', !song.lyrics);
+    
+    lyricsModal.classList.add('active');
+}
+
+function closeLyrics() {
+    lyricsModal.classList.remove('active');
+}
