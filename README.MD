@@ -171,3 +171,29 @@ Buatin gue musik player yang keren banget dengan design glassmorphism modern. Be
 - js/script.js: semua logic & interactivity
 
 Buatin semuanya biar production-ready, mobile-optimized, dengan UX yang smooth!
+
+--------------------------------------------------------------------------------------------------------------------------------
+
+## TUTORIAL
+
+### Clone Repository
+
+git clone https://github.com/farhanadrianto/Hanzmoni.git
+
+### Masuk ke Folder Project
+
+cd Hanzmoni
+
+### Jalankan Project
+
+Buka folder menggunakan Visual Studio Code lalu jalankan menggunakan Live Server atau buka file index.html langsung di browser.
+
+--------------------------------------------------------------------------------------------------------------------------------
+
+### Live Demo Saya
+
+https://hanzmoni.vercel.app
+
+### GitHub Repository Saya
+
+https://github.com/farhanadrianto/Hanzmoni
