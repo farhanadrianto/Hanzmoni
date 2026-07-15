@@ -37,22 +37,40 @@ const songs = [
     cover: "assets/fly away.jpg"
     },
     {
-        title: "Decadence",
-        artist: "Disturbed",
-        file: "song/disturbed decadence.mp3",
-        cover: "assets/disturbed decadence.jpg"
+    title: "Dreams Pt. II",
+    artist: "Lost Sky feat. Sara Skinner",
+    file: "song/lost sky dreams.mp3",
+    cover: "assets/lost sky dreams.jpg"
     },
     {
-        title: "Wavin' Flag",
-        artist: "K'NAAN",
-        file: "song/wavin flag.mp3",
-        cover: "assets/wavin flag single.jpg"
+    title: "NO BATIDÃO",
+    artist: "ZXKAI, slxughter",
+    file: "song/no batidao.mp3",
+    cover: "assets/no batidao.jpg"
+    },
+    {
+    title: "See You Again",
+    artist: "Wiz Khalifa feat. Charlie Puth",
+    file: "song/see you again.mp3",
+    cover: "assets/see you again.jpg"
+    },
+    {
+    title: "You'll Be in My Heart",
+    artist: "NIKI",
+    file: "song/niki dont listen to them.mp3",
+    cover: "assets/niki dont listen to them.jpg"
     },
     {
         title: "Waka Waka (This Time For Africa)",
         artist: "Shakira",
         file: "song/waka waka.mp3",
         cover: "assets/waka waka.jpg"
+    },
+    {
+        title: "Wavin' Flag",
+        artist: "K'NAAN",
+        file: "song/wavin flag.mp3",
+        cover: "assets/wavin flag single.jpg"
     },
     {
         title: "Ale Ale Ale",
@@ -77,6 +95,12 @@ const songs = [
         artist: "Barasuara",
         file: "song/terbuang dalam waktu.mp3",
         cover: "assets/terbuang dalam waktu.webp"
+    },
+    {
+        title: "Decadence",
+        artist: "Disturbed",
+        file: "song/disturbed decadence.mp3",
+        cover: "assets/disturbed decadence.jpg"
     }
 ];
 
@@ -360,6 +384,10 @@ function loadSong(index) {
     progressBar.value = 0;
     progressFill.style.width = '0%';
     currentTimeEl.textContent = '0:00';
+    audioPlayer.currentTime = 0;
+    
+    // Reset album cover animation state
+    albumCover.classList.remove('playing');
 }
 
 function addToRecentlyPlayed(song) {
@@ -542,14 +570,27 @@ function toggleLoop() {
     if (loopMode === 0) {
         loopBtn.classList.remove('active');
         loopBtn.title = 'Loop: Off';
+        // Enable shuffle kalo loop off
+        shuffleBtn.style.opacity = '1';
+        shuffleBtn.style.pointerEvents = 'auto';
     } else if (loopMode === 1) {
         // Loop satu lagu (default)
         loopBtn.classList.add('active');
         loopBtn.title = 'Loop: One';
+        // Disable shuffle kalo loop on
+        shuffleBtn.style.opacity = '0.4';
+        shuffleBtn.style.pointerEvents = 'none';
+        isShuffle = false;
+        shuffleBtn.classList.remove('active');
     } else {
         // Loop semua
         loopBtn.classList.add('active');
         loopBtn.title = 'Loop: All';
+        // Disable shuffle kalo loop on
+        shuffleBtn.style.opacity = '0.4';
+        shuffleBtn.style.pointerEvents = 'none';
+        isShuffle = false;
+        shuffleBtn.classList.remove('active');
     }
     
     saveSettings();
@@ -559,6 +600,20 @@ function toggleShuffle() {
     isShuffle = !isShuffle;
     shuffleBtn.classList.toggle('active', isShuffle);
     shuffleBtn.title = isShuffle ? 'Shuffle: On' : 'Shuffle: Off';
+    
+    if (isShuffle) {
+        // Disable loop kalo shuffle on
+        loopBtn.style.opacity = '0.4';
+        loopBtn.style.pointerEvents = 'none';
+        loopMode = 0;
+        loopBtn.classList.remove('active');
+        loopBtn.title = 'Loop: Off';
+    } else {
+        // Enable loop kalo shuffle off
+        loopBtn.style.opacity = '1';
+        loopBtn.style.pointerEvents = 'auto';
+    }
+    
     saveSettings();
 }
 
